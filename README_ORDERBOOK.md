@@ -1,189 +1,304 @@
-# Optimal Orderbook Implementation
+# Orderbook Implementation with Heaps
 
 ## Overview
-This implementation provides a high-performance orderbook using Python's standard library data structures: heaps (heapq), deques (collections.deque), and dictionaries.
+An efficient orderbook implementation using heaps for O(log P) best price lookups. Designed for students to complete in under 25 minutes (5 TODOs, each under 5 minutes).
 
 ## Files
-- **orderbook_template.py** - Template for students with empty methods to implement
-- **orderbook_solution.py** - Complete solution with full implementation
+- **orderbook_template.ipynb** - Student template with strategic TODOs
+- **orderbook_solution.ipynb** - Complete solution
+- **README_ORDERBOOK.md** - This file
+
+## Key Concept: Negative Prices for Max Heap
+
+Python's `heapq` module only implements **min heaps** (smallest element at the top). For bids, we need a **max heap** to get the highest price first.
+
+**Solution:** Store negative prices!
+
+```python
+# Bid prices: $100, $99, $98
+# Store in heap as: -100, -99, -98
+heapq.heappush(bid_heap, -100.0)
+
+# Min heap puts -100 at top (most negative)
+# Negate to get actual price: -(-100) = $100 (highest bid!)
+best_bid = -bid_heap[0]  # Returns 100.0
+```
+
+**For asks:** Use positive prices normally (we want lowest ask at top).
+
+```python
+# Ask prices: $101, $102, $103
+heapq.heappush(ask_heap, 101.0)  # No negation
+
+# Min heap puts 101 at top (smallest)
+best_ask = ask_heap[0]  # Returns 101.0
+```
 
 ## Data Structures
 
-### 1. Heaps (Priority Queues)
-- **Purpose**: Track best bid/ask prices efficiently
-- **Implementation**:
-  - `bid_heap`: Uses **negative prices** to simulate max heap (highest bid first)
-  - `ask_heap`: Uses **positive prices** for min heap (lowest ask first)
-- **Why negative prices?**: Python's heapq only implements min heaps. By negating bid prices, the smallest value (most negative) represents the highest actual price.
+```python
+bids = {price: deque([order1, order2, ...])}  # Buy orders
+asks = {price: deque([order1, order2, ...])}  # Sell orders
+bid_heap = [-100, -99, -98]                    # Negative prices!
+ask_heap = [101, 102, 103]                     # Positive prices
+orders = {order_id: Order}                     # Fast O(1) lookup
+```
 
-### 2. Deques (Double-ended Queues)
-- **Purpose**: Maintain FIFO order of orders at each price level
-- **Operations**: O(1) append, O(1) popleft for efficient queue management
-- **Price-Time Priority**: Orders at the same price level are matched in the order they arrived
+**Why this design:**
+- **Heaps:** O(log P) for best price operations
+- **Deques:** O(1) append/popleft for FIFO order at each price level
+- **Dicts:** O(1) order lookup by ID
 
-### 3. Dictionaries
-- **Purpose**: Fast O(1) lookups
-- **Usage**:
-  - `bids` / `asks`: Map price → deque of orders at that price
-  - `orders`: Map order_id → Order object for instant status lookups
+## TODOs (Each under 5 minutes)
 
-## Time Complexity Analysis
+### TODO 1: Submit Order (~3 min)
+**Task:** Complete the SELL/asks section
 
-### Operation Complexities
+**What's provided:**
+- BUY side fully implemented as example
+- All structure and error checking done
 
-| Operation | Time Complexity | Explanation |
-|-----------|----------------|-------------|
-| **Submit Order** | O(log P) | P = number of price levels. Heap push when new price level |
-| **Cancel Order** | O(M) | M = orders at price level. Must scan deque to find order |
-| **Modify Order** | O(M + log P) | Cancel (O(M)) + Submit (O(log P)) |
-| **Get Status** | O(1) | Direct dictionary lookup |
-| **Match Order** | O(log P + K×M + K×log P) | K = matched price levels, M = orders per level |
-| **Get Best Bid/Ask** | Amortized O(1) | Usually O(1), worst case O(P) if cleaning stale prices |
-| **Get Spread** | Amortized O(1) | Two get_best calls |
+**What to do:**
+```python
+# Add these 3 lines for asks:
+if price not in self.asks:
+    self.asks[price] = deque()
+    heapq.heappush(self.ask_heap, price)  # Positive!
+self.asks[price].append(order)
+```
 
-### Detailed Breakdown
+### TODO 2: Cancel Order (~4 min)
+**Task:** Remove order from queue and cleanup
 
-#### Submit Order: O(log P)
-1. Check order_id exists: O(1) - dictionary lookup
-2. Create Order object: O(1)
-3. Add to price level dict: O(1)
-4. Push to heap (if new price): O(log P) - only when creating new price level
-5. Append to deque: O(1)
+**What's provided:**
+- Lookup and validation logic
+- Status update
+- Price level dictionary selection
 
-**Total**: O(log P) dominated by heap push
+**What to do:**
+```python
+# Inside the try block:
+queue.remove(order)
+if len(queue) == 0:
+    del price_levels[order.price]
+```
 
-#### Cancel Order: O(M)
-1. Lookup order: O(1) - dictionary
-2. Update status: O(1)
-3. Remove from deque: O(M) - must scan deque to find and remove
-4. Cleanup empty price level: O(1)
+**Why more complex:** Real cancellation needs to remove from queue, not just mark status.
 
-**Total**: O(M) where M is typically small (1-10 orders per price)
+### Get Order Status (Already complete!)
+No TODO - this is provided as a freebie. Simple O(1) dict lookup.
 
-#### Match Order: O(log P + K×M + K×log P)
-1. Submit incoming order: O(log P)
-2. For each matched price level K:
-   - Get best price from heap: O(1)
-   - Match against M orders at that level: O(M)
-   - Update order statuses: O(1) per order
-   - Remove filled orders: O(1) per order (popleft)
-   - Clean up empty level: O(log P) - heap pop
-3. Total: O(log P + K×M + K×log P)
+### TODO 3: Get Best Bid (~3 min)
+**Task:** Complete the validity check and cleanup
 
-**In Practice**: Very fast as K (matched levels) and M (orders per level) are typically small
-- K: Usually 1-5 price levels
-- M: Usually 1-10 orders per price level
+**What's provided:**
+- Loop structure
+- Price extraction with negation
 
-#### Get Best Bid/Ask: Amortized O(1)
-- **Best case**: O(1) - top of heap is valid
-- **Worst case**: O(P) - must clean all stale heap entries
-- **Amortized**: O(1) - stale entries are rare in practice
+**What to do:**
+```python
+if price in self.bids and len(self.bids[price]) > 0:
+    return price
 
-**Why stale entries?** We don't remove from heap when cancelling orders (heap doesn't support efficient removal). Instead, we lazily clean stale prices when accessing the heap top.
+heapq.heappop(self.bid_heap)
+if price in self.bids:
+    del self.bids[price]
+```
 
-## Key Implementation Details
+**Key point:** Remember prices are negative! Already handled: `price = -self.bid_heap[0]`
 
-### Price-Time Priority
-Orders are matched based on:
-1. **Price priority**: Best prices matched first (highest bid, lowest ask)
-2. **Time priority**: At same price level, earlier orders matched first (FIFO via deque)
+### TODO 4: Get Best Ask (~2 min)
+**Task:** Same as get_best_bid but for asks
 
-### Partial Fills
-- Orders can be partially filled if insufficient liquidity
-- `filled_quantity` tracks how much has been executed
-- Status updates: OPEN → PARTIALLY_FILLED → FILLED
+**What to do:** Copy TODO 3 logic, but use `self.ask_heap` and `self.asks` (no negation needed!)
 
-### Order Modification
-- Implemented as cancel + re-submit
-- **Loses time priority** - goes to back of queue at new price level
-- New quantity must be ≥ filled_quantity
+### TODO 5: Match Order (~5 min)
+**Task:** Implement SELL order matching logic
 
-### Trade Execution
-Matching follows exchange rules:
-- **Buy orders**: Match against asks where ask_price ≤ buy_price
-- **Sell orders**: Match against bids where bid_price ≥ sell_price
-- **Trade price**: Always the resting order's price (price-time priority)
+**What's provided:**
+- Complete BUY side as template
+- All structure and trade recording logic
 
-### Heap Cleanup
-Heaps may contain "stale" prices (price levels with no orders):
-- Created when orders are cancelled or filled
-- Lazily cleaned during `get_best_bid()` / `get_best_ask()` calls
-- Maintains O(1) amortized performance
+**What to do:** Mirror the BUY logic for SELL:
+```python
+best_bid = self.get_best_bid()
+if best_bid is None or best_bid < price:
+    return trades
 
-## Example Usage
+bid_orders = self.bids[best_bid]
+
+for resting in list(bid_orders):
+    # Same matching logic as BUY
+    # Key difference: trade format is (resting, incoming, ...)
+    trades.append((resting.order_id, order_id, best_bid, trade_qty))
+```
+
+## Time Complexity
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| **Submit** | O(log P) | Heap push for new price level |
+| **Cancel** | O(M) | Must scan deque to remove order |
+| **Get Status** | O(1) | Direct dict lookup |
+| **Get Best Bid/Ask** | O(1) amortized | Usually O(1), worst O(P) for cleanup |
+| **Match** | O(M) | Process orders at best price level |
+
+Where:
+- **P** = number of unique price levels (typically 10-100)
+- **M** = orders at a price level (typically 1-10)
+
+## Why Heaps Are Better
+
+### Without Heaps (simple dict):
+```python
+def get_best_bid(self):
+    return max(self.bids.keys())  # O(P) - scans all prices!
+```
+
+### With Heaps:
+```python
+def get_best_bid(self):
+    return -self.bid_heap[0]  # O(1) - instant access!
+```
+
+**Benefit:** O(P) → O(1) for best price queries, which happen frequently.
+
+## Stale Price Cleanup
+
+**Problem:** When orders are cancelled, we don't remove prices from the heap (too expensive).
+
+**Solution:** Lazy cleanup in get_best_bid/ask:
+
+```python
+while self.bid_heap:
+    price = -self.bid_heap[0]
+    if price in self.bids and len(self.bids[price]) > 0:
+        return price  # Valid price!
+
+    # Stale price - remove it
+    heapq.heappop(self.bid_heap)
+    del self.bids[price]
+```
+
+**Why this works:** Stale prices are rare, so amortized complexity is still O(1).
+
+## Matching Logic
+
+### BUY Order Matching:
+1. Get best (lowest) ask price
+2. Check if ask ≤ buy price
+3. Match against orders at that ask price in FIFO order
+4. Execute trades at the **ask price** (resting order's price)
+5. Update filled quantities and statuses
+
+### SELL Order Matching:
+1. Get best (highest) bid price
+2. Check if bid ≥ sell price
+3. Match against orders at that bid price in FIFO order
+4. Execute trades at the **bid price** (resting order's price)
+5. Update filled quantities and statuses
+
+**Trade Format:**
+- BUY order: `(buyer_id=incoming, seller_id=resting, price, qty)`
+- SELL order: `(buyer_id=resting, seller_id=incoming, price, qty)`
+
+## Example Walkthrough
 
 ```python
 ob = OrderBook()
 
 # Submit orders
-ob.submit_order("B1", Side.BUY, 100.0, 50)   # Buy 50 @ $100
-ob.submit_order("A1", Side.SELL, 101.0, 40)  # Sell 40 @ $101
+ob.submit_order("B1", Side.BUY, 100.0, 50)   # Best bid: $100
+ob.submit_order("A1", Side.SELL, 101.0, 40)  # Best ask: $101
 
-# Check status
-order = ob.get_order_status("B1")
-print(order)  # Order details with filled quantity, status
+# State of heaps:
+# bid_heap = [-100.0]  (negative!)
+# ask_heap = [101.0]   (positive)
 
-# Cancel order
-ob.cancel_order("B1")
+# Get best prices
+ob.get_best_bid()  # Returns 100.0 (negates -100.0)
+ob.get_best_ask()  # Returns 101.0
 
-# Modify order (loses time priority)
-ob.modify_order("A1", new_price=100.5)
+# Match sell order willing to accept $99+
+trades = ob.match_order("S1", Side.SELL, 99.0, 30)
+# Matches with B1 at $100 (bid price)
+# Returns: [("B1", "S1", 100.0, 30)]
 
-# Match order and get trades
-trades = ob.match_order("B2", Side.BUY, 101.0, 30)
-for buyer_id, seller_id, price, qty in trades:
-    print(f"Trade: {qty} @ ${price}")
-
-# View orderbook
-print(ob)  # Pretty-printed bid/ask levels
-
-# Get market data
-best_bid = ob.get_best_bid()
-best_ask = ob.get_best_ask()
-spread = ob.get_spread()
+# B1 now partially filled (30/50)
 ```
 
-## Why This Design is Optimal
+## Common Mistakes to Avoid
 
-1. **Heaps for best prices**: O(log P) insert/delete, O(1) peek
-2. **Deques for FIFO**: O(1) append/popleft maintains time priority
-3. **Dicts for lookups**: O(1) order status queries
-4. **Lazy cleanup**: Deferred heap cleanup maintains amortized O(1) for get_best operations
-5. **Price levels**: Grouping orders by price reduces heap operations
+### 1. Forgetting to negate bid prices
+```python
+# WRONG
+heapq.heappush(self.bid_heap, price)
 
-## Performance Characteristics
+# RIGHT
+heapq.heappush(self.bid_heap, -price)
+```
 
-### Space Complexity
-- O(N + P) where N = total orders, P = price levels
-- Typically P << N (many orders at few prices)
+### 2. Negating ask prices (don't!)
+```python
+# WRONG
+heapq.heappush(self.ask_heap, -price)
 
-### Real-World Performance
-- **Submit**: ~1-2 microseconds
-- **Cancel**: ~2-5 microseconds (depends on queue length)
-- **Match**: ~5-20 microseconds (depends on matched orders)
-- **Get Best**: ~100 nanoseconds (amortized)
+# RIGHT
+heapq.heappush(self.ask_heap, price)
+```
 
-### Scalability
-- Handles 100,000+ orders efficiently
-- P (price levels) grows slowly in practice
-- M (orders per level) typically stays small
+### 3. Not checking for stale prices
+```python
+# WRONG - might return empty price level
+return self.bid_heap[0]
 
-## Trade-offs
+# RIGHT - clean up stale prices
+while self.bid_heap:
+    price = -self.bid_heap[0]
+    if price in self.bids and len(self.bids[price]) > 0:
+        return price
+    heapq.heappop(self.bid_heap)
+```
 
-### Advantages
-✓ Simple implementation using standard library
-✓ No external dependencies
-✓ Excellent average-case performance
-✓ Easy to understand and debug
+### 4. Wrong trade format for SELL orders
+```python
+# WRONG - incoming is seller, not buyer!
+trades.append((order_id, resting.order_id, ...))
 
-### Disadvantages
-✗ Cancel is O(M) due to deque scan
-✗ Heap contains stale entries (space overhead)
-✗ Not lock-free (would need careful synchronization for multi-threading)
+# RIGHT - resting is buyer for SELL orders
+trades.append((resting.order_id, order_id, ...))
+```
 
-### Alternative Approaches
-- **Skip lists**: O(log N) cancel, but more complex
-- **Red-black trees**: O(log N) all operations, but more code
-- **Array-based**: O(1) cancel with array + doubly-linked list, but more complex
+## Testing Your Implementation
 
-This implementation strikes an excellent balance between simplicity and performance for educational purposes and most real-world use cases.
+The notebook includes 5 test cells:
+1. **Submit orders** - Tests both BUY and SELL submissions
+2. **Order status** - Tests lookup functionality
+3. **Cancel order** - Tests cancellation and best price update
+4. **Match sell** - Tests SELL order matching with partial fills
+5. **Match buy** - Tests BUY order matching across quantities
+
+Expected output shows orderbook state, trades executed, and final order statuses.
+
+## Extensions (After Completing TODOs)
+
+Once you've finished the basic implementation, try:
+
+1. **Multi-level matching** - Match across multiple price levels
+2. **Order modification** - Implement as cancel + resubmit
+3. **Market orders** - Execute at best available price regardless
+4. **Stop orders** - Trigger when price reaches threshold
+5. **Performance testing** - Benchmark with 10,000+ orders
+6. **Spread tracking** - Add get_spread() method
+
+## Production Considerations
+
+This implementation is educational. Real exchanges need:
+- **Lock-free data structures** for concurrency
+- **Direct price removal from heap** (using indexed heaps)
+- **Event-driven architecture** for scalability
+- **Audit logs** for regulatory compliance
+- **Risk management** before order acceptance
+- **Market data distribution** in microseconds
+
+But for understanding orderbook mechanics? This is perfect! 🎯
