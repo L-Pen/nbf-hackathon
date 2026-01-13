@@ -3,8 +3,6 @@
 ## Overview
 An efficient orderbook using heaps for O(1) best price lookups. Designed for students to complete in under 15 minutes (5 TODOs, each under 5 minutes).
 
-**Key Simplification:** We assume no stale prices in heaps, making `get_best_bid/ask` trivially simple!
-
 ## Files
 - **orderbook_template.ipynb** - Student template with strategic TODOs
 - **orderbook_solution.ipynb** - Complete solution
@@ -60,15 +58,6 @@ orders = {order_id: Order}                     # Fast O(1) lookup
 - BUY side fully implemented as example
 - All structure and error checking done
 
-**What to do:**
-```python
-# Add these 3 lines for asks:
-if price not in self.asks:
-    self.asks[price] = deque()
-    heapq.heappush(self.ask_heap, price)  # Positive!
-self.asks[price].append(order)
-```
-
 ### TODO 2: Cancel Order (~4 min)
 **Task:** Remove order from queue and cleanup
 
@@ -77,42 +66,20 @@ self.asks[price].append(order)
 - Status update
 - Price level dictionary selection
 
-**What to do:**
-```python
-# Inside the try block:
-queue.remove(order)
-if len(queue) == 0:
-    del price_levels[order.price]
-```
-
 **Why more complex:** Real cancellation needs to remove from queue, not just mark status.
 
 ### Get Order Status (Already complete!)
 No TODO - this is provided as a freebie. Simple O(1) dict lookup.
 
-### TODO 3: Get Best Bid (~1 min) ⚡ SUPER SIMPLE!
+### TODO 3: Get Best Bid (~1 min)
 **Task:** Return highest bid from heap
 
 **What's provided:** Nothing - you write it all!
 
-**What to do:**
-```python
-if not self.bid_heap:
-    return None
-return -self.bid_heap[0]  # Negate to get actual price!
-```
-
 **Why so easy:** No stale price cleanup needed!
 
-### TODO 4: Get Best Ask (~1 min) ⚡ SUPER SIMPLE!
+### TODO 4: Get Best Ask (~1 min)
 **Task:** Return lowest ask from heap
-
-**What to do:**
-```python
-if not self.ask_heap:
-    return None
-return self.ask_heap[0]  # Already positive, no negation!
-```
 
 ### TODO 5: Match Order (~5 min)
 **Task:** Implement SELL order matching logic
@@ -120,20 +87,6 @@ return self.ask_heap[0]  # Already positive, no negation!
 **What's provided:**
 - Complete BUY side as template
 - All structure and trade recording logic
-
-**What to do:** Mirror the BUY logic for SELL:
-```python
-best_bid = self.get_best_bid()
-if best_bid is None or best_bid < price:
-    return trades
-
-bid_orders = self.bids[best_bid]
-
-for resting in list(bid_orders):
-    # Same matching logic as BUY
-    # Key difference: trade format is (resting, incoming, ...)
-    trades.append((resting.order_id, order_id, best_bid, trade_qty))
-```
 
 ## Time Complexity
 
@@ -165,41 +118,20 @@ def get_best_bid(self):
     return -self.bid_heap[0]  # O(1) - instant access!
 ```
 
-**Benefit:** O(P) → O(1) for best price queries, which happen frequently.
-
-## Simplification: No Stale Prices
-
-**What we removed:** In production systems, cancelled orders leave "stale" prices in the heap that need cleanup.
-
-**Our assumption:** All prices in the heap have active orders. This means:
-- `get_best_bid/ask` is truly O(1) - just peek at top!
-- No complex cleanup loops needed
-- Students focus on core heap concepts
-
-**In production:** You'd need lazy cleanup:
-```python
-# Production code (NOT in our tutorial):
-def get_best_bid(self):
-    while self.bid_heap:
-        price = -self.bid_heap[0]
-        if price in self.bids and len(self.bids[price]) > 0:
-            return price  # Valid price
-        heapq.heappop(self.bid_heap)  # Remove stale
-    return None
-```
+**Benefit:** O(P) ? O(1) for best price queries, which happen frequently.
 
 ## Matching Logic
 
 ### BUY Order Matching:
 1. Get best (lowest) ask price
-2. Check if ask ≤ buy price
+2. Check if ask = buy price
 3. Match against orders at that ask price in FIFO order
 4. Execute trades at the **ask price** (resting order's price)
 5. Update filled quantities and statuses
 
 ### SELL Order Matching:
 1. Get best (highest) bid price
-2. Check if bid ≥ sell price
+2. Check if bid = sell price
 3. Match against orders at that bid price in FIFO order
 4. Execute trades at the **bid price** (resting order's price)
 5. Update filled quantities and statuses
@@ -282,21 +214,6 @@ The notebook includes 5 test cells:
 
 Expected output shows orderbook state, trades executed, and final order statuses.
 
-## Why This Simplification Works
-
-**For learning:**
-- ✓ Students grasp heap concepts without complexity
-- ✓ Negative prices for max heap is the key lesson
-- ✓ O(1) vs O(P) performance difference is clear
-- ✓ Can be completed in 15 minutes
-
-**For production:**
-- ✗ Need stale price cleanup (lazy or eager)
-- ✗ Need thread-safe operations
-- ✗ Need more sophisticated data structures
-
-But our goal is education, not production deployment!
-
 ## Extensions (After Completing TODOs)
 
 Once you've finished the basic implementation, try:
@@ -307,14 +224,3 @@ Once you've finished the basic implementation, try:
 4. **Market orders** - Execute at best available price regardless
 5. **Performance testing** - Benchmark with 10,000+ orders
 6. **Spread tracking** - Add `get_spread()` method
-
-## Summary
-
-This implementation teaches:
-- ✓ **Heap operations** with negative prices for max heap
-- ✓ **O(1) lookups** for best prices
-- ✓ **Deque usage** for FIFO order queues
-- ✓ **Order matching** with partial fills
-- ✓ **Time complexity** trade-offs
-
-Perfect balance of educational value and simplicity! 🎯
