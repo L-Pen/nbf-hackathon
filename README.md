@@ -14,7 +14,7 @@ Instead of filling in blank functions, students:
 
 ## Files
 
-- **orderbook_workshop.ipynb** - Start here! Contains suboptimal implementation
+- **orderbook_workshop.ipynb** - Start here! Contains suboptimal implementation and test functions
 - **orderbook_solution.ipynb** - Optimal implementation (reveal after workshop)
 - **README.md** - This file
 
@@ -27,57 +27,47 @@ Simplified to just the ask side - no complex bid/ask logic needed!
 ```python
 submit(order_id, price, quantity)  # Add a sell order
 cancel(order_id)                   # Cancel a sell order
-get_best()                         # Get lowest ask price
+get_best_price()                   # Get lowest ask price
 ```
 
 ### Performance Targets:
 
-| Operation | Current (Slow) | Target (Fast) | Improvement |
-|-----------|----------------|---------------|-------------|
-| **submit()** | O(N) | O(log P) | Heap + Dict |
-| **cancel()** | O(N) | O(1) | Dict lookup |
-| **get_best()** | **O(N)** ❌ | **O(1)** ✅ | **Min Heap!** |
+| Operation | Current (Slow) | Target (Fast) |
+|-----------|----------------|---------------|
+| **submit()** | O(N) | O(log P) |
+| **cancel()** | O(N) | O(P) |
+| **get_best_price()** | **O(N)** ❌ | **O(1)** ✅ |
 
 Where:
 - N = total orders (could be 1000s!)
 - P = unique price levels (~10-100)
 
-## Why Asks (Not Bids)?
+## Workshop Flow
 
-Using sell orders (asks) is **simpler** for teaching:
-- ✅ Need lowest price → Use min heap directly
-- ✅ No negative price trick needed
-- ✅ Python's `heapq` is min heap by default
-- ✅ Straightforward: `heap[0]` gives best price
-
-**Compare to bids (harder):**
-- ❌ Need highest price → Must simulate max heap
-- ❌ Requires negative price trick
-- ❌ More confusing: store `-price`, retrieve `-heap[0]`
-
-## Workshop Flow (60 minutes)
-
-### Phase 1: Understand the Problem (10 min)
+### Phase 1: Understand the Problem
 1. Run the suboptimal implementation
 2. See that it works correctly
-3. **Run performance benchmarks**
+3. **Run performance benchmarks using test functions**
 4. Watch it slow down with more orders
-5. Identify: "get_best() is O(N) - too slow!"
+5. Identify: "get_best_price() is O(N) - too slow!"
 
-### Phase 2: Group Discussion (10 min)
-- Why is get_best() slow?
+### Phase 2: Group Discussion
+- Why is get_best_price() slow?
 - What data structure gives O(1) min access?
 - Why use a dictionary for cancel()?
 - Draw the target data structure
 
-### Phase 3: Live Coding (30 min)
+### Phase 3: Live Coding
 Optimize together as a class:
-1. Add dict for order lookup → O(1) cancel
-2. Add min heap for price tracking → O(1) get_best
+1. Add dict for order lookup → O(1) order access
+2. Add min heap for price tracking → O(1) get_best_price
 3. Organize by price levels
-4. Test and benchmark improvements
+4. Implement cancel with heap cleanup → O(P) but keeps heap clean
+5. Test and benchmark improvements using test functions
 
-### Phase 4: Results & Celebration (10 min)
+**Key insight:** We optimize for the most common operation (get_best_price) at the expense of cancel!
+
+### Phase 4: Results & Celebration
 - Compare before/after performance
 - See 50-100x speedup!
 - Discuss real-world impact
@@ -87,10 +77,16 @@ Optimize together as a class:
 ### 1. Performance is Measurable
 Students **see** real numbers:
 ```
-Before: 100 microseconds per get_best()
-After:  <1 microsecond per get_best()
-Result: 100x faster! 🚀
+Before: 40 microseconds per get_best()
+After:  <0.5 microsecond per get_best_price()
+Result: 80-100x faster! 🚀
 ```
+
+### 1.5 Understanding Trade-offs
+- `get_best_price()`: O(1) - just peek at heap[0]!
+- `cancel()`: O(P) - rebuilds heap to keep it clean
+- **Key learning:** Optimize for the most common operation
+- In real orderbooks, queries happen 1000x more than cancels!
 
 ### 2. Data Structures Matter
 Learn **why** each structure is chosen:
@@ -160,16 +156,16 @@ Scales linearly - O(N)! ❌
 
 ### Target Data Structure
 ```python
-class OptimalOrderBook:
+class OptimizedOrderBook:
     def __init__(self):
-        self.asks = {}         # {price: [orders]}
+        self.asks = {}         # {price: deque([orders])}
         self.ask_heap = []     # [101, 102, 103]
         self.orders = {}       # {order_id: Order}
 ```
 
 **Solutions:**
-- `get_best()`: Peek heap top → O(1)
-- `cancel()`: Dict lookup → O(1)
+- `get_best_price()`: Peek heap top → O(1)
+- `cancel()`: Mark cancelled + rebuild heap if needed → O(P)
 - `submit()`: Dict check + heap push → O(log P)
 
 ### Performance Characteristics
@@ -199,33 +195,6 @@ Constant time - O(1)! ✅
 
 **Result:** 100x more throughput!
 
-### Production Considerations
-
-After the workshop, discuss:
-- Thread safety / concurrency
-- Handling stale prices in heap
-- Multi-level matching
-- Memory efficiency
-- Latency requirements (microseconds matter!)
-
-## Teaching Tips
-
-### Before the Workshop
-1. ✅ Test both notebooks work
-2. ✅ Have Python + Jupyter ready
-3. ✅ Prepare to draw data structures on board
-
-### During the Workshop
-1. **Let it be slow!** Don't apologize for suboptimal code
-2. **Run benchmarks live** - make slowness visible
-3. **Ask questions first**:
-   - "Why is this slow?"
-   - "What structure would help?"
-   - "Has anyone used heaps before?"
-4. **Code incrementally** - optimize one method at a time
-5. **Benchmark after each fix** - celebrate improvements!
-6. **Draw pictures** - visualize the heap structure
-
 ### Common Student Questions
 
 **Q: Why not just sort the list?**
@@ -238,7 +207,7 @@ A: Great question! Production systems handle "stale" prices. For this workshop, 
 A: Yes! That's O(log N) for everything. Heaps are simpler and O(1) for peek.
 
 **Q: What about the bid side?**
-A: Same idea, but you'd need max heap (use negative prices). We use asks to keep it simple!
+A: Same idea, but you'd need max heap. We use asks to keep it simple!
 
 ## Extensions
 
@@ -252,31 +221,3 @@ After completing the core workshop, students can:
 6. **Add visualization** - Display orderbook graphically
 7. **Measure latency** - Track microsecond-level performance
 8. **Add persistence** - Save/load orderbook state
-
-## Learning Outcomes
-
-By the end of this workshop, students will:
-
-✅ Understand O(N) vs O(1) performance **intuitively**
-✅ Know when and why to use heaps
-✅ See the impact of data structure choices
-✅ Practice measuring and optimizing code
-✅ Think algorithmically about bottlenecks
-✅ Experience dramatic performance improvements
-
-## Success Metrics
-
-Workshop is successful if students:
-- Can explain why the original code was slow
-- Understand how heaps provide O(1) min access
-- Appreciate the 50-100x speedup they achieved
-- Feel excited about optimization
-- Want to learn more about data structures!
-
-## Key Takeaway
-
-> "We optimized get_best() from 100 microseconds to <1 microsecond. That's not just faster - that's the difference between handling 10K vs 1M+ requests per second. **Performance matters!**" 🚀
-
----
-
-**Ready to optimize?** Open `orderbook_workshop.ipynb` and let's go! 💪
