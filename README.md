@@ -2,7 +2,7 @@
 
 ## Overview
 
-A collaborative learning workshop where students start with a working but inefficient orderbook and optimize it together to achieve O(1) performance.
+A collaborative learning workshop where students start with a working but inefficient orderbook and optimize it together to achieve better performance.
 
 ## Learning Approach
 
@@ -44,20 +44,19 @@ Where:
 
 ## Workshop Structure
 
-### Phase 1: Problem Identification (10 minutes)
+### Phase 1: Problem Identification
 1. Run the suboptimal implementation
-2. Verify correctness
-3. Execute performance benchmarks
-4. Observe performance degradation with scale
-5. Identify bottleneck: get_best_price() is O(N)
+2. Execute performance benchmarks
+3. Observe performance degradation with scale
+4. Identify bottleneck: get_best_price() is O(N)
 
-### Phase 2: Solution Design (10 minutes)
+### Phase 2: Solution Design
 - Analyze why get_best_price() is slow
 - Discuss data structures for O(1) minimum access
 - Consider dictionary for O(1) lookup by ID
 - Design target data structure
 
-### Phase 3: Implementation (30 minutes)
+### Phase 3: Implementation
 Implement optimizations collaboratively:
 1. Add dictionary for order lookup
 2. Add min heap for price tracking
@@ -66,11 +65,6 @@ Implement optimizations collaboratively:
 5. Test and benchmark improvements
 
 Key trade-off: Optimize for the most common operation (get_best_price) at the expense of cancel.
-
-### Phase 4: Analysis (10 minutes)
-- Compare before/after performance
-- Review 50-100x speedup results
-- Discuss real-world applications
 
 ## Learning Objectives
 
@@ -210,27 +204,6 @@ A: Yes, that provides O(log N) for all operations. Heaps are simpler and provide
 
 **Q: What about the bid side?**
 A: Same approach, but requires max heap (use negative prices). This workshop focuses on asks for simplicity.
-
-## Extensions
-
-After completing the core workshop:
-
-1. Add the bid side (learn negative price trick for max heap)
-2. Implement order matching
-3. Add order modification functionality
-4. Handle partial fills
-5. Build market simulator
-6. Add visualization
-7. Track microsecond-level performance
-8. Add persistence layer
-
-## Implementation Notes
-
-### Why Min Heap for Asks
-- Python's heapq is min heap by default
-- No negation needed (unlike max heap for bids)
-- Simple and intuitive
-- heap[0] always provides lowest price
 
 ### Production Considerations
 - Thread safety and locking mechanisms
