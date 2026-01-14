@@ -2,159 +2,163 @@
 
 ## Overview
 
-A **collaborative learning workshop** where students start with a **working but slow** orderbook and optimize it together to achieve O(1) performance!
+A collaborative learning workshop where students start with a working but inefficient orderbook and optimize it together to achieve O(1) performance.
 
-## Concept: Learn by Optimizing
+## Learning Approach
 
-Instead of filling in blank functions, students:
-1. ✅ Start with **fully working code** (just slow)
-2. 📊 **Measure performance problems** with real benchmarks
-3. 🤔 **Discuss solutions** as a group
-4. 🚀 **Optimize together** and see dramatic improvements
+Students will:
+1. Start with fully working but slow code
+2. Measure performance problems with benchmarks
+3. Discuss optimization strategies as a group
+4. Implement optimizations together
 
 ## Files
 
-- **orderbook_workshop.ipynb** - Start here! Contains suboptimal implementation and test functions
-- **orderbook_solution.ipynb** - Optimal implementation (reveal after workshop)
+- **orderbook_workshop.ipynb** - Starting point with suboptimal implementation and test functions
+- **orderbook_solution.ipynb** - Optimized implementation for instructor reference
 - **README.md** - This file
 
 ## The Challenge
 
 ### Focus: Sell Orders (Asks) Only
-Simplified to just the ask side - no complex bid/ask logic needed!
+Simplified to just the ask side to reduce complexity.
 
-### Three Functions to Optimize:
+### Three Core Functions
 ```python
 submit(order_id, price, quantity)  # Add a sell order
 cancel(order_id)                   # Cancel a sell order
 get_best_price()                   # Get lowest ask price
 ```
 
-### Performance Targets:
+### Performance Targets
 
-| Operation | Current (Slow) | Target (Fast) |
-|-----------|----------------|---------------|
-| **submit()** | O(N) | O(log P) |
-| **cancel()** | O(N) | O(P) |
-| **get_best_price()** | **O(N)** ❌ | **O(1)** ✅ |
+| Operation | Current | Target |
+|-----------|---------|--------|
+| submit() | O(N) | O(log P) |
+| cancel() | O(N) | O(P) |
+| get_best_price() | O(N) | O(1) |
 
 Where:
-- N = total orders (could be 1000s!)
-- P = unique price levels (~10-100)
+- N = total orders
+- P = unique price levels
 
-## Workshop Flow
+## Workshop Structure
 
-### Phase 1: Understand the Problem
+### Phase 1: Problem Identification (10 minutes)
 1. Run the suboptimal implementation
-2. See that it works correctly
-3. **Run performance benchmarks using test functions**
-4. Watch it slow down with more orders
-5. Identify: "get_best_price() is O(N) - too slow!"
+2. Verify correctness
+3. Execute performance benchmarks
+4. Observe performance degradation with scale
+5. Identify bottleneck: get_best_price() is O(N)
 
-### Phase 2: Group Discussion
-- Why is get_best_price() slow?
-- What data structure gives O(1) min access?
-- Why use a dictionary for cancel()?
-- Draw the target data structure
+### Phase 2: Solution Design (10 minutes)
+- Analyze why get_best_price() is slow
+- Discuss data structures for O(1) minimum access
+- Consider dictionary for O(1) lookup by ID
+- Design target data structure
 
-### Phase 3: Live Coding
-Optimize together as a class:
-1. Add dict for order lookup → O(1) order access
-2. Add min heap for price tracking → O(1) get_best_price
-3. Organize by price levels
-4. Implement cancel with heap cleanup → O(P) but keeps heap clean
-5. Test and benchmark improvements using test functions
+### Phase 3: Implementation (30 minutes)
+Implement optimizations collaboratively:
+1. Add dictionary for order lookup
+2. Add min heap for price tracking
+3. Organize orders by price levels
+4. Implement cancel with heap cleanup
+5. Test and benchmark improvements
 
-**Key insight:** We optimize for the most common operation (get_best_price) at the expense of cancel!
+Key trade-off: Optimize for the most common operation (get_best_price) at the expense of cancel.
 
-### Phase 4: Results & Celebration
+### Phase 4: Analysis (10 minutes)
 - Compare before/after performance
-- See 50-100x speedup!
-- Discuss real-world impact
+- Review 50-100x speedup results
+- Discuss real-world applications
 
-## Key Learning Objectives
+## Learning Objectives
 
-### 1. Performance is Measurable
-Students **see** real numbers:
+### 1. Performance Measurement
+Students observe quantitative improvements:
 ```
 Before: 40 microseconds per get_best()
 After:  <0.5 microsecond per get_best_price()
-Result: 80-100x faster! 🚀
+Result: 80-100x faster
 ```
 
-### 1.5 Understanding Trade-offs
-- `get_best_price()`: O(1) - just peek at heap[0]!
-- `cancel()`: O(P) - rebuilds heap to keep it clean
-- **Key learning:** Optimize for the most common operation
-- In real orderbooks, queries happen 1000x more than cancels!
+### 2. Complexity Trade-offs
+- get_best_price(): O(1) via heap peek
+- cancel(): O(P) via heap rebuild
+- Design principle: Optimize for common operations
+- Real-world context: Queries occur 1000x more than cancellations
 
-### 2. Data Structures Matter
-Learn **why** each structure is chosen:
+### 3. Data Structure Selection
+Understanding the rationale for each choice:
 - **Min Heap**: O(1) access to minimum value
 - **Dictionary**: O(1) lookup by key
-- **Not a list**: O(N) search is too slow
+- **Flat List**: O(N) search is inefficient
 
-### 3. Algorithmic Thinking
-Focus on:
-- Identifying bottlenecks
-- Choosing right data structures
-- Measuring improvements
-- Understanding Big O notation in practice
+### 4. Algorithmic Thinking
+Focus areas:
+- Identifying performance bottlenecks
+- Selecting appropriate data structures
+- Measuring improvements quantitatively
+- Understanding Big O notation practically
 
-## The Min Heap Solution
+## Technical Details
 
-### Problem
+### Min Heap Solution
+
+#### Problem
 ```python
 # Current: Scan all orders to find minimum
 for order in orders:
     if order.price < best_price:
         best_price = order.price
-# O(N) - SLOW!
+# O(N)
 ```
 
-### Solution
+#### Solution
 ```python
 # Use min heap: smallest always at top
 import heapq
 ask_heap = [101, 102, 103]
-best_ask = ask_heap[0]  # O(1) - FAST!
+best_ask = ask_heap[0]  # O(1)
 ```
 
-### Visual
+#### Visualization
 ```
 Orders: [103, 101, 105, 102, 104]
-         ↓
+         |
+         v
 Push to heap: [101, 102, 103, 104, 105]
-         ↓
-heap[0] = 101  ← Lowest price instantly! ✓
+         |
+         v
+heap[0] = 101  (Lowest price)
 ```
 
-## Suboptimal Implementation Details
+### Suboptimal Implementation
 
-### Current Data Structure
+#### Data Structure
 ```python
 class SuboptimalOrderBook:
     def __init__(self):
-        self.orders = []  # Just a flat list!
+        self.orders = []  # Flat list
 ```
 
-**Problems:**
-- `get_best()`: Must scan entire list → O(N)
-- `cancel()`: Must search entire list → O(N)
-- `submit()`: Must check for duplicates → O(N)
+#### Performance Issues
+- get_best(): Must scan entire list (O(N))
+- cancel(): Must search entire list (O(N))
+- submit(): Must check for duplicates (O(N))
 
-### Performance Characteristics
+#### Measured Performance
 ```
 10 orders:     ~5 microseconds
 100 orders:    ~50 microseconds
 1000 orders:   ~500 microseconds
 
-Scales linearly - O(N)! ❌
+Linear scaling: O(N)
 ```
 
-## Optimal Implementation Details
+### Optimized Implementation
 
-### Target Data Structure
+#### Data Structure
 ```python
 class OptimizedOrderBook:
     def __init__(self):
@@ -163,61 +167,75 @@ class OptimizedOrderBook:
         self.orders = {}       # {order_id: Order}
 ```
 
-**Solutions:**
-- `get_best_price()`: Peek heap top → O(1)
-- `cancel()`: Mark cancelled + rebuild heap if needed → O(P)
-- `submit()`: Dict check + heap push → O(log P)
+#### Optimizations
+- get_best_price(): Peek heap top (O(1))
+- cancel(): Mark cancelled, rebuild heap if needed (O(P))
+- submit(): Dict check + heap push (O(log P))
 
-### Performance Characteristics
+#### Measured Performance
 ```
 10 orders:     <1 microsecond
 100 orders:    <1 microsecond
 1000 orders:   <1 microsecond
 
-Constant time - O(1)! ✅
+Constant time: O(1)
 ```
 
-## Real-World Impact
+## Real-World Application
 
-### Why This Matters
+### Scenario: Stock Exchange
 
-**Scenario:** Stock exchange processing orders
-
-**Suboptimal (O(N)):**
+**Suboptimal Implementation (O(N)):**
 - 1000 orders in book
 - 100 microseconds per query
-- **10,000 queries/second max**
+- Maximum: 10,000 queries/second
 
-**Optimal (O(1)):**
+**Optimized Implementation (O(1)):**
 - Any number of orders
 - <1 microsecond per query
-- **1,000,000+ queries/second** 🚀
+- Maximum: 1,000,000+ queries/second
 
-**Result:** 100x more throughput!
+**Impact:** 100x throughput improvement
 
-### Common Student Questions
+### Common Questions
 
-**Q: Why not just sort the list?**
-A: Sorting is O(N log N) every time. Heap maintains order in O(log P) per insert!
+**Q: Why not sort the list?**
+A: Sorting is O(N log N) per operation. Heap maintains order in O(log P) per insert.
 
 **Q: What about deleting from the heap?**
-A: Great question! Production systems handle "stale" prices. For this workshop, we simplify.
+A: Production systems handle stale prices differently. This workshop simplifies for clarity.
 
-**Q: Can we use a binary search tree instead?**
-A: Yes! That's O(log N) for everything. Heaps are simpler and O(1) for peek.
+**Q: Can we use a binary search tree?**
+A: Yes, that provides O(log N) for all operations. Heaps are simpler and provide O(1) for peek.
 
 **Q: What about the bid side?**
-A: Same idea, but you'd need max heap. We use asks to keep it simple!
+A: Same approach, but requires max heap (use negative prices). This workshop focuses on asks for simplicity.
 
 ## Extensions
 
-After completing the core workshop, students can:
+After completing the core workshop:
 
-1. **Add the bid side** - Learn the negative price trick for max heap
-2. **Implement matching** - Match buy and sell orders
-3. **Add order modification** - Change price/quantity
-4. **Handle partial fills** - Split orders across multiple trades
-5. **Build a simulator** - Create fake market activity
-6. **Add visualization** - Display orderbook graphically
-7. **Measure latency** - Track microsecond-level performance
-8. **Add persistence** - Save/load orderbook state
+1. Add the bid side (learn negative price trick for max heap)
+2. Implement order matching
+3. Add order modification functionality
+4. Handle partial fills
+5. Build market simulator
+6. Add visualization
+7. Track microsecond-level performance
+8. Add persistence layer
+
+## Implementation Notes
+
+### Why Min Heap for Asks
+- Python's heapq is min heap by default
+- No negation needed (unlike max heap for bids)
+- Simple and intuitive
+- heap[0] always provides lowest price
+
+### Production Considerations
+- Thread safety and locking mechanisms
+- Lazy deletion strategies
+- Memory pooling
+- Event notification systems
+- Audit logging
+- Microsecond-precision timestamps
